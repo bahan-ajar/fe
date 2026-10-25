@@ -1,44 +1,64 @@
 import { Users, UserCheck, BookOpen, CheckCircle2 } from "lucide-react";
 
-interface StatItem {
+export interface StatItemData {
   title: string;
   value: string;
   subtext: string;
-  icon: React.ComponentType<{ className?: string }>;
+  iconKey?: string;
 }
 
-const stats: StatItem[] = [
+interface DashboardStatsProps {
+  stats?: StatItemData[];
+}
+
+const defaultStats: StatItemData[] = [
   {
     title: "Total Mahasiswa",
-    value: "124",
-    subtext: "+4 mahasiswa baru semester ini",
-    icon: Users,
+    value: "0",
+    subtext: "Mahasiswa terdaftar di sistem",
+    iconKey: "users",
   },
   {
     title: "Mahasiswa Aktif",
-    value: "118",
-    subtext: "95.1% tingkat keaktifan",
-    icon: UserCheck,
+    value: "0",
+    subtext: "Tingkat keaktifan semester ini",
+    iconKey: "userCheck",
   },
   {
     title: "Mata Kuliah",
-    value: "18",
-    subtext: "Tersebar di 6 semester",
-    icon: BookOpen,
+    value: "0",
+    subtext: "Tersebar di semester aktif",
+    iconKey: "bookOpen",
   },
   {
     title: "Rata-rata Kehadiran",
-    value: "92.4%",
-    subtext: "Berdasarkan absensi bulan ini",
-    icon: CheckCircle2,
+    value: "0%",
+    subtext: "Berdasarkan absensi terkini",
+    iconKey: "checkCircle",
   },
 ];
 
-export function DashboardStats() {
+export function DashboardStats({ stats }: DashboardStatsProps) {
+  const displayStats = stats && stats.length > 0 ? stats : defaultStats;
+
+  const getIcon = (key?: string) => {
+    switch (key) {
+      case "users":
+        return Users;
+      case "userCheck":
+        return UserCheck;
+      case "bookOpen":
+        return BookOpen;
+      case "checkCircle":
+      default:
+        return CheckCircle2;
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
+      {displayStats.map((stat) => {
+        const Icon = getIcon(stat.iconKey);
         return (
           <div
             key={stat.title}

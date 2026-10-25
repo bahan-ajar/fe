@@ -1,11 +1,6 @@
-export interface PresensiItem {
-  id: number;
-  nim: string;
-  nama: string;
-  mataKuliah: string;
-  tanggal: string;
-  status: "hadir" | "izin" | "sakit" | "alpa";
-}
+import { PresensiItem } from "@/types";
+
+export type { PresensiItem };
 
 interface PresensiTableProps {
   data: PresensiItem[];

@@ -1,24 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Calendar } from "lucide-react";
+import { formatDate } from "@/lib";
 
 interface PresensiHeaderProps {
   totalRecords: number;
 }
 
 export function PresensiHeader({ totalRecords }: PresensiHeaderProps) {
-  const [formattedDate, setFormattedDate] = useState("18 Oktober 2026");
-
-  useEffect(() => {
-    setFormattedDate(
-      new Date().toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    );
-  }, []);
+  const formattedDate = formatDate(new Date(), {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-200">

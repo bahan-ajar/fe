@@ -1,13 +1,13 @@
 import { Search, Filter, RotateCcw } from "lucide-react";
-import { MahasiswaStatus } from "../types";
+import { MahasiswaStatus } from "@/types";
 
 interface MahasiswaFiltersProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   selectedKelas: string;
   onKelasChange: (value: string) => void;
-  selectedStatus: string;
-  onStatusChange: (value: string) => void;
+  selectedStatus: MahasiswaStatus | "";
+  onStatusChange: (value: MahasiswaStatus | "") => void;
   kelasList: string[];
   onReset: () => void;
   hasActiveFilters: boolean;
@@ -63,7 +63,7 @@ export function MahasiswaFilters({
         <div className="relative">
           <select
             value={selectedStatus}
-            onChange={(e) => onStatusChange(e.target.value)}
+            onChange={(e) => onStatusChange(e.target.value as MahasiswaStatus | "")}
             className="pl-3 pr-8 py-2 text-xs bg-white border border-zinc-200 rounded-lg text-zinc-700 focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 appearance-none cursor-pointer"
           >
             <option value="">Semua Status</option>

@@ -1,22 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   GraduationCap,
   LayoutDashboard,
   Users,
   BookOpen,
   CalendarCheck,
+  StickyNote,
   LogOut,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
+import { logoutAction } from "@/app/(auth)/login/actions";
+import { useCurrentUser } from "@/hooks";
+import { getInitials } from "@/lib";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
 }
 
 const navItems: NavItem[] = [
@@ -24,6 +29,12 @@ const navItems: NavItem[] = [
     title: "Ringkasan",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Catatan (Notes)",
+    href: "/notes",
+    icon: StickyNote,
+    badge: "P10",
   },
   {
     title: "Mahasiswa",
@@ -44,35 +55,14 @@ const navItems: NavItem[] = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
+  const { user: currentUser, isAdmin } = useCurrentUser();
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        setCurrentUser(JSON.parse(stored));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
     }
-    router.push("/login");
-  };
-
-  const getInitials = (name?: string) => {
-    if (!name) return "AD";
-    const parts = name.trim().split(" ");
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
+    await logoutAction();
   };
 
   return (
@@ -92,12 +82,22 @@ export function DashboardSidebar() {
 
       {/* Navigation Links */}
       <div className="flex-1 py-5 px-3 space-y-1">
-        <div className="px-3 pb-2 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
-          Menu Utama
+        <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+          <span>Menu Utama</span>
+          {currentUser && (
+            <span
+              className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                isAdmin ? "bg-purple-100 text-purple-700" : "bg-zinc-100 text-zinc-600"
+              }`}
+            >
+              {currentUser.role || "MEMBER"}
+            </span>
+          )}
         </div>
+
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
@@ -117,9 +117,18 @@ export function DashboardSidebar() {
                 />
                 <span>{item.title}</span>
               </div>
-              {isActive && (
-                <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-              )}
+              <div className="flex items-center gap-1.5">
+                {item.badge && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
+                      isActive ? "bg-white/20 text-white" : "bg-zinc-100 text-zinc-500"
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+                {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
+              </div>
             </Link>
           );
         })}
@@ -127,25 +136,38 @@ export function DashboardSidebar() {
 
       {/* User Footer Profile & Logout */}
       <div className="p-3 border-t border-zinc-100">
-        <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-full bg-zinc-800 text-white text-xs font-medium flex items-center justify-center shrink-0">
+            <div
+              className={`w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0 ${
+                isAdmin ? "bg-purple-700" : "bg-zinc-800"
+              }`}
+            >
               {getInitials(currentUser?.name)}
             </div>
             <div className="truncate">
-              <p className="text-xs font-medium text-zinc-800 truncate" title={currentUser?.name || "Administrator"}>
-                {currentUser?.name || "Administrator"}
-              </p>
-              <p className="text-[11px] text-zinc-400 truncate" title={currentUser?.email || "admin@univ.ac.id"}>
-                {currentUser?.email || "admin@univ.ac.id"}
+              <div className="flex items-center gap-1">
+                <p
+                  className="text-xs font-semibold text-zinc-900 truncate"
+                  title={currentUser?.name || "Pengguna"}
+                >
+                  {currentUser?.name || "Pengguna"}
+                </p>
+                {isAdmin && <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />}
+              </div>
+              <p
+                className="text-[11px] text-zinc-400 truncate"
+                title={currentUser?.email || "user@univ.ac.id"}
+              >
+                {currentUser?.email || "user@univ.ac.id"}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleLogout}
-            title="Keluar"
-            className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-white rounded-md transition-colors cursor-pointer"
+            title="Keluar (Logout Sesi)"
+            className="p-1.5 text-zinc-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
           </button>

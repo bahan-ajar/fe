@@ -1,57 +1,46 @@
-"use client";
+import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/dal";
+import { API_URL } from "@/lib/api";
+import { PresensiItem } from "@/types";
+import { PresensiContainer } from "./components/PresensiContainer";
 
-import { useState } from "react";
-import { PresensiHeader } from "./components/PresensiHeader";
-import { PresensiTable, PresensiItem } from "./components/PresensiTable";
+async function PresensiContent() {
+  await getCurrentUser();
 
-const initialPresensi: PresensiItem[] = [
-  {
-    id: 1,
-    nim: "2101001",
-    nama: "Ahmad Fauzi",
-    mataKuliah: "Pemrograman Web Lanjut",
-    tanggal: "2026-10-18",
-    status: "hadir",
-  },
-  {
-    id: 2,
-    nim: "2101002",
-    nama: "Dewi Lestari",
-    mataKuliah: "Pemrograman Web Lanjut",
-    tanggal: "2026-10-18",
-    status: "hadir",
-  },
-  {
-    id: 3,
-    nim: "2101003",
-    nama: "Rian Pratama",
-    mataKuliah: "Basis Data Terdistribusi",
-    tanggal: "2026-10-17",
-    status: "izin",
-  },
-  {
-    id: 4,
-    nim: "2101004",
-    nama: "Nadia Putri",
-    mataKuliah: "Kecerdasan Buatan",
-    tanggal: "2026-10-17",
-    status: "sakit",
-  },
-];
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  let initialData: PresensiItem[] = [];
+  try {
+    const res = await fetch(`${API_URL}/presensi`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      initialData = json.data || [];
+    }
+  } catch (error) {
+    console.error("Gagal mengambil data presensi dari backend:", error);
+  }
+
+  return <PresensiContainer initialData={initialData} />;
+}
 
 export default function PresensiPage() {
-  const [data, setData] = useState<PresensiItem[]>(initialPresensi);
-
-  const handleStatusChange = (id: number, newStatus: PresensiItem["status"]) => {
-    setData((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
-    );
-  };
-
   return (
-    <div className="space-y-6">
-      <PresensiHeader totalRecords={data.length} />
-      <PresensiTable data={data} onStatusChange={handleStatusChange} />
-    </div>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-xs text-zinc-400">
+          Memuat data presensi dari backend...
+        </div>
+      }
+    >
+      <PresensiContent />
+    </Suspense>
   );
 }

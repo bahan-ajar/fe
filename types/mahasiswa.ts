@@ -10,3 +10,13 @@ export interface Mahasiswa {
 }
 
 export type MahasiswaFormData = Omit<Mahasiswa, "id" | "created_at">;
+
+export type MahasiswaFormState = {
+  success: boolean;
+  message: string;
+  errors?: Record<string, string[]>;
+  data?: Mahasiswa;
+};
+
+// Alias for backward compatibility
+export type FormState = MahasiswaFormState;

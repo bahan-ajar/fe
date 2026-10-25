@@ -1,4 +1,4 @@
-import { MahasiswaStatus } from "../types";
+import { MahasiswaStatus } from "@/types";
 
 interface MahasiswaStatusBadgeProps {
   status: MahasiswaStatus;

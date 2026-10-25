@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useActionState } from "react";
 import { X, Loader2, AlertCircle } from "lucide-react";
-import { Mahasiswa, MahasiswaStatus } from "../types";
-import { saveMahasiswaAction, FormState } from "../actions";
+import { Mahasiswa, MahasiswaStatus, FormState } from "@/types";
+import { saveMahasiswaAction } from "../actions";
 
 interface MahasiswaModalProps {
   isOpen: boolean;
@@ -18,37 +18,22 @@ const initialFormState: FormState = {
   message: "",
 };
 
-export function MahasiswaModal({
-  isOpen,
+function MahasiswaModalContent({
   onClose,
   onSave,
   editingMahasiswa,
   kelasList,
-}: MahasiswaModalProps) {
+}: Omit<MahasiswaModalProps, "isOpen">) {
   // Hook useActionState untuk menghubungkan Form dengan Server Action
   const [state, formAction, isPending] = useActionState(
     saveMahasiswaAction,
     initialFormState
   );
 
-  const [nim, setNim] = useState("");
-  const [nama, setNama] = useState("");
-  const [kelas, setKelas] = useState("TI-3A");
-  const [status, setStatus] = useState<MahasiswaStatus>("aktif");
-
-  useEffect(() => {
-    if (editingMahasiswa) {
-      setNim(editingMahasiswa.nim);
-      setNama(editingMahasiswa.nama);
-      setKelas(editingMahasiswa.kelas);
-      setStatus(editingMahasiswa.status);
-    } else {
-      setNim("");
-      setNama("");
-      setKelas(kelasList[0] || "TI-3A");
-      setStatus("aktif");
-    }
-  }, [editingMahasiswa, isOpen, kelasList]);
+  const [nim, setNim] = useState(editingMahasiswa?.nim || "");
+  const [nama, setNama] = useState(editingMahasiswa?.nama || "");
+  const [kelas, setKelas] = useState(editingMahasiswa?.kelas || kelasList[0] || "TI-3A");
+  const [status, setStatus] = useState<MahasiswaStatus>(editingMahasiswa?.status || "aktif");
 
   // Efek ketika mutasi Server Action berhasil
   useEffect(() => {
@@ -57,8 +42,6 @@ export function MahasiswaModal({
       onClose();
     }
   }, [state, onSave, onClose]);
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
@@ -247,5 +230,16 @@ export function MahasiswaModal({
         </form>
       </div>
     </div>
+  );
+}
+
+export function MahasiswaModal(props: MahasiswaModalProps) {
+  if (!props.isOpen) return null;
+
+  return (
+    <MahasiswaModalContent
+      key={props.editingMahasiswa?.id ?? "new"}
+      {...props}
+    />
   );
 }

@@ -1,5 +1,5 @@
-import { AlertTriangle, X } from "lucide-react";
-import { Mahasiswa } from "../types";
+import { AlertTriangle } from "lucide-react";
+import { Mahasiswa } from "@/types";
 
 interface MahasiswaDeleteModalProps {
   isOpen: boolean;

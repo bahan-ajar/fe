@@ -1,71 +1,46 @@
-"use client";
+import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/dal";
+import { API_URL } from "@/lib/api";
+import { MataKuliah } from "@/types";
+import { MataKuliahContainer } from "./components/MataKuliahContainer";
 
-import { useState } from "react";
-import { MataKuliahHeader } from "./components/MataKuliahHeader";
-import { MataKuliahTable, MataKuliah } from "./components/MataKuliahTable";
+async function MataKuliahContent() {
+  await getCurrentUser();
 
-const initialMataKuliah: MataKuliah[] = [
-  {
-    id: 1,
-    kode: "MK-101",
-    nama: "Pemrograman Web Lanjut",
-    sks: 3,
-    dosen: "Dr. Budi Santoso, M.Kom.",
-  },
-  {
-    id: 2,
-    kode: "MK-102",
-    nama: "Basis Data Terdistribusi",
-    sks: 3,
-    dosen: "Dr. Budi Santoso, M.Kom.",
-  },
-  {
-    id: 3,
-    kode: "MK-103",
-    nama: "Kecerdasan Buatan",
-    sks: 4,
-    dosen: "Siti Rahma, M.Cs.",
-  },
-];
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  let initialData: MataKuliah[] = [];
+  try {
+    const res = await fetch(`${API_URL}/mata-kuliah`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      initialData = json.data || [];
+    }
+  } catch (error) {
+    console.error("Gagal mengambil data mata kuliah dari backend:", error);
+  }
+
+  return <MataKuliahContainer initialData={initialData} />;
+}
 
 export default function MataKuliahPage() {
-  const [data, setData] = useState<MataKuliah[]>(initialMataKuliah);
-
-  const handleAddNew = () => {
-    const kode = prompt("Masukkan Kode MK (contoh: MK-104):");
-    if (!kode) return;
-    const nama = prompt("Masukkan Nama Mata Kuliah:");
-    if (!nama) return;
-
-    const newMK: MataKuliah = {
-      id: Date.now(),
-      kode,
-      nama,
-      sks: 3,
-      dosen: "Dr. Budi Santoso, M.Kom.",
-    };
-    setData((prev) => [...prev, newMK]);
-  };
-
-  const handleEdit = (mk: MataKuliah) => {
-    const newNama = prompt("Edit Nama Mata Kuliah:", mk.nama);
-    if (newNama && newNama.trim()) {
-      setData((prev) =>
-        prev.map((item) => (item.id === mk.id ? { ...item, nama: newNama } : item))
-      );
-    }
-  };
-
-  const handleDelete = (mk: MataKuliah) => {
-    if (confirm(`Yakin ingin menghapus mata kuliah ${mk.nama}?`)) {
-      setData((prev) => prev.filter((item) => item.id !== mk.id));
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <MataKuliahHeader totalCount={data.length} onAddNew={handleAddNew} />
-      <MataKuliahTable data={data} onEdit={handleEdit} onDelete={handleDelete} />
-    </div>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-xs text-zinc-400">
+          Memuat daftar mata kuliah dari backend...
+        </div>
+      }
+    >
+      <MataKuliahContent />
+    </Suspense>
   );
 }

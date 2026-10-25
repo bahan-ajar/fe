@@ -1,12 +1,7 @@
 import { Pencil, Trash2, BookOpen } from "lucide-react";
+import { MataKuliah } from "@/types";
 
-export interface MataKuliah {
-  id: number;
-  kode: string;
-  nama: string;
-  sks: number;
-  dosen: string;
-}
+export type { MataKuliah };
 
 interface MataKuliahTableProps {
   data: MataKuliah[];

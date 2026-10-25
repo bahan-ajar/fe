@@ -1,5 +1,5 @@
 import { Pencil, Trash2, UserX } from "lucide-react";
-import { Mahasiswa } from "../types";
+import { Mahasiswa } from "@/types";
 import { MahasiswaStatusBadge } from "./MahasiswaStatusBadge";
 
 interface MahasiswaTableProps {

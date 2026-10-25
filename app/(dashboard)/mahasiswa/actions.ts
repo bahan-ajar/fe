@@ -1,23 +1,24 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/dal";
+import { API_URL } from "@/lib/api";
 import { MahasiswaSchema } from "@/lib/validations/mahasiswa";
-import { Mahasiswa } from "./types";
+import { Mahasiswa, MahasiswaFormState } from "@/types";
 
-export type FormState = {
-  success: boolean;
-  message: string;
-  errors?: Record<string, string[]>;
-  data?: Mahasiswa;
-};
+export type FormState = MahasiswaFormState;
 
 /**
- * Server Action untuk memvalidasi dan menyimpan (Tambah / Ubah) data Mahasiswa
+ * Server Action untuk memvalidasi dan menyimpan (Tambah / Ubah) data Mahasiswa ke Backend API
  */
 export async function saveMahasiswaAction(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
+  // 1. Cek Login via DAL
+  await getCurrentUser();
+
   const rawId = formData.get("id");
   const id = rawId ? Number(rawId) : undefined;
 
@@ -28,7 +29,7 @@ export async function saveMahasiswaAction(
     status: formData.get("status"),
   };
 
-  // Validasi di sisi server menggunakan Zod Schema
+  // 2. Validasi di sisi server menggunakan Zod Schema
   const validation = MahasiswaSchema.safeParse(rawData);
 
   if (!validation.success) {
@@ -40,31 +41,40 @@ export async function saveMahasiswaAction(
   }
 
   try {
-    const validData = validation.data;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
 
-    // Mutasi data: Di sini kamu menghubungkan ke database/ORM project-mu (misal: Prisma/MySQL)
-    const resultItem: Mahasiswa = {
-      id: id ?? Date.now(),
-      nim: validData.nim,
-      nama: validData.nama,
-      kelas: validData.kelas,
-      status: validData.status,
-      created_at: new Date().toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-    };
+    const url = id ? `${API_URL}/mahasiswa/${id}` : `${API_URL}/mahasiswa`;
+    const method = id ? "PUT" : "POST";
 
-    // Revalidasi cache halaman agar Next.js merender data terbaru
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(validation.data),
+    });
+
+    const result = await res.json().catch(() => null);
+
+    if (!res.ok || !result?.success) {
+      return {
+        success: false,
+        message: result?.message || "Gagal menyimpan data ke database backend.",
+      };
+    }
+
+    // 3. Revalidasi cache halaman agar Next.js merender data terbaru
     revalidatePath("/mahasiswa");
+    revalidatePath("/dashboard");
 
     return {
       success: true,
       message: id
-        ? `Data mahasiswa "${validData.nama}" berhasil diperbarui!`
-        : `Mahasiswa baru "${validData.nama}" berhasil ditambahkan!`,
-      data: resultItem,
+        ? `Data mahasiswa "${validation.data.nama}" berhasil diperbarui!`
+        : `Mahasiswa baru "${validation.data.nama}" berhasil ditambahkan!`,
+      data: result.data,
     };
   } catch (error) {
     console.error("Server Action Error:", error);
@@ -76,15 +86,34 @@ export async function saveMahasiswaAction(
 }
 
 /**
- * Server Action untuk mutasi hapus data Mahasiswa
+ * Server Action untuk mutasi hapus data Mahasiswa ke Backend API
  */
 export async function deleteMahasiswaAction(id: number) {
+  // Cek login via DAL
+  await getCurrentUser();
+
   try {
-    // Eksekusi mutasi delete di server/database
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    const res = await fetch(`${API_URL}/mahasiswa/${id}`, {
+      method: "DELETE",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    const result = await res.json().catch(() => null);
+
+    if (!res.ok || !result?.success) {
+      return { success: false, error: result?.message || "Gagal menghapus data dari backend" };
+    }
+
     revalidatePath("/mahasiswa");
+    revalidatePath("/dashboard");
     return { success: true, id };
   } catch (error) {
     console.error("Delete Action Error:", error);
-    return { success: false, error: "Gagal menghapus data" };
+    return { success: false, error: "Gagal menghapus data di server backend" };
   }
 }

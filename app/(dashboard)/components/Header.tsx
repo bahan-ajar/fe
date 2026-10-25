@@ -1,21 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Bell, Search, Calendar } from "lucide-react";
+import { formatDate } from "@/lib";
 
 export function DashboardHeader() {
-  const [currentDate, setCurrentDate] = useState("Minggu, 18 Oktober 2026");
-
-  useEffect(() => {
-    setCurrentDate(
-      new Date().toLocaleDateString("id-ID", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    );
-  }, []);
+  const currentDate = formatDate(new Date(), {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <header className="h-16 border-b border-zinc-200 bg-white px-6 flex items-center justify-between sticky top-0 z-10">
